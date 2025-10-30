@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+<title>MAX SECURITY TESTOR— Final (Simulation)</title>
+<style>
+  :root{
+    --bg:#050406;
+    --panel:#0a0a0b;
+    --accent:#ff3b3b;
+    --accent2:#ff8b6b;
+    --muted:#c3a4a4;
+    --glass: rgba(255,255,255,0.02);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    --success:#2bd48a; /* green for "infiltrated" simulation */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#050406,#080204);font-family:var(--mono);-webkit-font-smoothing:antialiased;color:var(--accent);-webkit-touch-callout:none;-webkit-user-select:none}
+  .app{padding:12px;display:flex;flex-direction:column;gap:12px;min-height:100vh}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:12px;padding:10px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+  .header{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .brand-wrap{display:flex;align-items:center;gap:10px}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:900;color:#170505;font-size:18px;box-shadow:0 6px 20px rgba(255,59,59,0.12)}
+  .title{font-size:18px;letter-spacing:2px;font-weight:900;color:var(--accent);text-transform:uppercase}
+  .subtitle{font-size:12px;color:var(--muted)}
+  .icons{display:flex;gap:8px;align-items:center}
+  .icon{width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03)}
+  /* make the visual slightly smaller than original */
+  .visual{position:relative;height:200px;border-radius:10px;overflow:hidden}
+  #matrixCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .overlay-effects{position:absolute;inset:0;pointer-events:none}
+  .big-title{position:absolute;left:14px;top:12px;z-index:3;color:var(--accent);font-weight:900;font-size:18px;letter-spacing:6px}
+  .big-title.simulatedGreen{color:var(--success); text-shadow: 0 6px 20px rgba(43,212,138,0.12);}
+  .camera{position:absolute;right:10px;top:10px;width:140px;height:92px;border-radius:8px;background:#040404;border:1px solid rgba(255,255,255,0.04);z-index:5;overflow:hidden}
+  .cam-title{display:flex;justify-content:space-between;padding:6px 8px;font-size:11px;color:var(--muted);background:rgba(0,0,0,0.12)}
+  .cam-feed{height:calc(100% - 28px);background:#020202;position:relative;overflow:hidden}
+  .cam-frame{position:absolute;inset:0;background:
+    radial-gradient(circle at 10% 20%, rgba(255,59,59,0.02), transparent 15%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(255,59,59,0.02), rgba(255,140,107,0.01));
+    mix-blend-mode:screen;opacity:0.95;transform-origin:center}
+  .rec{display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #ff9b9b, #ff3b3b)}
+  .meters{display:flex;gap:8px;margin-top:10px;align-items:flex-end}
+  .meter{flex:1;background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);border-radius:8px;padding:8px;min-height:60px}
+  .lbl{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  .bar{height:8px;background:rgba(255,255,255,0.03);border-radius:999px;margin-top:6px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  /* smaller system logs */
+  .logArea{height:120px;overflow:auto;background:linear-gradient(180deg, rgba(0,0,0,0.02), transparent);padding:8px;border-radius:8px;font-size:12px;color:var(--muted)}
+  .terminal{border-radius:8px;padding:8px;background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.08));height:220px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .out{flex:1;overflow:auto;white-space:pre-wrap;font-size:13px;color:var(--accent2);padding-right:8px}
+  /* sticky prompt to stay above keyboard and viewport safe-area inset */
+  .prompt{display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;padding:8px;background:linear-gradient(180deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03));backdrop-filter: blur(2px)}
+  .label{color:var(--accent);font-weight:900}
+  .prompt input{flex:1;background:transparent;border:0;outline:0;color:var(--accent2);font-family:var(--mono);font-size:14px}
+  .btn{padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+  .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#210404;font-weight:700}
+  .hint{font-size:12""px;color:var(--muted);margin-top:6px;text-align:center}
+  /* loading overlay */
+  .loadingOverlay{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.3));display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;color:var(--accent);backdrop-filter:blur(0px);transition:backdrop-filter .6s ease, opacity .3s ease}
+  .loadBox{width:88%;max-width:420px;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18))}
+  .progress{height:12px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden;margin-top:10px}
+  .progress > i{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .percent{font-weight:700;margin-top:8px}
+  .protocolArea{margin-top:12px;max-height:120px;overflow:auto;font-size:12px;color:var(--muted);text-align:left;white-space:pre-wrap}
+  /* blurred after completion */
+  .blurred{filter:blur(6px) saturate(0.8);pointer-events:none}
+  /* keyframes */
+  @keyframes camShake {0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-1px,0) rotate(-0.2deg)}50%{transform:translate(1px,0) rotate(0.2deg)}75%{transform:translate(-1px,0) rotate(-0.1deg)}100%{transform:translate(0,0) rotate(0)}}
+  @keyframes camNoise {0%{opacity:0.02}50%{opacity:0.08}100%{opacity:0.02}}
+  .cam-frame{animation: camShake 3.6s infinite linear, camNoise 0.16s infinite steps(2)}
+  @media(min-width:600px){ .visual{height:260px} .camera{width:220px;height:140px} .logo{width:64px;height:64px} .title{font-size:20px} .terminal{height:300px} }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- header -->
+  <div class="card header" role="banner">
+    <div class="brand-wrap">
+      <div class="logo">MS</div>
+      <div>
+        <div class="title">MAX SCHOOL OF REVERSE ENGINEERING</div>
+      
+      </div>
+    </div>
+    <div class="icons" aria-hidden="true">
+      <div class="icon" title="Kali (stylized)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C7 5 5 9 6 13c1 4 6 8 10 8s6-5 6-9c0-5-4-9-10-10z" fill="#FF7B7B"/></svg>
+      </div>
+      <div class="icon" title="Termux (stylized)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" fill="#0c0c0c"/><path d="M8 9l3 3-3 3" stroke="#ff8b6b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 15h3" stroke="#ff3b3b" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- visual (slightly smaller) -->
+  <div class="card visual" role="region" aria-label="visual display">
+    <canvas id="matrixCanvas"></canvas>
+    <div class="overlay-effects">
+      <div class="big-title" id="bigTitle">BUG HUNTER</div>
+      <div class="camera" role="img" aria-label="camera feed">
+        <div class="cam-title"><div>CAM 07</div><div class="rec"><div class="dot" aria-hidden="true"></div><div style="font-size:11px;color:var(--muted);margin-left:6px">REC</div></div></div>
+        <div class="cam-feed"><div class="cam-frame"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- telemetry -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:900;color:var(--accent)">Telemetry</div>
+      <div style="font-size:12px;color:var(--muted)" id="clock">--</div>
+    </div>
+    <div class="meters" style="margin-top:10px">
+      <div class="meter"><div class="lbl"><span>CPU</span><span id="cpuVal">0%</span></div><div class="bar"><i id="cpuBar"></i></div></div>
+      <div class="meter"><div class="lbl"><span>NET</span><span id="netVal">0KB/s</span></div><div class="bar"><i id="netBar"></i></div></div>
+      <div class="meter"><div class="lbl"><span>GPU</span><span id="gpuVal">0%</span></div><div class="bar"><i id="gpuBar"></i></div></div>
+    </div>
+    <div class="hint">Tip: Type <code>initiate</code>, <code>hack</code>, <code>start</code> or <code>access</code> into the terminal to begin the simulation.</div>
+  </div>
+
+  <!-- logs (smaller) -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:700;color:var(--muted)">System Logs</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="regen">Regenerate</button>
+      </div>
+    </div>
+    <div class="logArea" id="logArea" aria-live="polite"></div>
+  </div>
+
+  <!-- terminal (input is sticky + mobile safe) -->
+  <div class="card terminal" id="terminalCard" data-simulation="true">
+    <div class="out" id="termOut" aria-live="polite"></div>
+    <div class="prompt" id="promptRow">
+      <div class="label">$ neo@local</div>
+      <input id="cmdInput" placeholder="type command..." autocomplete="off" spellcheck="false" inputmode="text">
+      <button class="btn" id="runBtn" style="width:84px">Run</button>
+    </div>
+
+    <!-- loading overlay (hidden by default) -->
+    <div class="loadingOverlay" id="loadingOverlay" style="display:none">
+      <div class="loadBox">
+        <div style="font-weight:900;font-size:16px">PROCESS INITIATED (SIMULATION)</div>
+        <div class="progress"><i id="progressBar"></i></div>
+        <div class="percent" id="percentText">0%</div>
+        <div class="protocolArea" id="protocolArea"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Background audio + smart autoplay/unmute script -->
+<!-- Replace "advert.mp3" with your real audio file path -->
+<audio id="bgAudio" src="advert.mp3" loop playsinline></audio>
+<script>
+  (function(){
+    // Try to play audio on load. Many browsers block audible autoplay.
+    const audio = document.getElementById('bgAudio');
+
+    // Attempt to start audible playback immediately
+    function tryPlayUnmuted() {
+      // First try: play unmuted
+      audio.muted = false;
+      const p = audio.play();
+      if (p !== undefined) {
+        p.then(() => {
+          // success: audible playback started
+          // nothing else required
+        }).catch((err) => {
+          // Autoplay blocked. Try muted autoplay as fallback.
+          audio.muted = true;
+          audio.play().catch(()=>{/* ignore */});
+          // Wait for a user gesture and then unmute+play
+          attachUserGestureToUnmute();
+        });
+      }
+    }
+
+    // If we never got a promise (very old browsers), try best effort
+    try {
+      tryPlayUnmuted();
+    } catch(e){
+      // fallback: start muted and await gesture
+      audio.muted = true;
+      try { audio.play().catch(()=>{}); } catch(e){}
+      attachUserGestureToUnmute();
+    }
+
+    function attachUserGestureToUnmute(){
+      // When user interacts, unmute and play so they actually hear it.
+      const handler = function(){
+        try {
+          audio.muted = false;
+          const p = audio.play();
+          if (p && p.catch) p.catch(()=>{}); // ignore errors
+        } catch(e){}
+        // remove handlers after first interaction
+        ['click','touchstart','keydown'].forEach(ev => window.removeEventListener(ev, handler));
+      };
+      ['click','touchstart','keydown'].forEach(ev => window.addEventListener(ev, handler, {passive:true}));
+    }
+
+    // Some browsers need a small delay after load to register autoplay attempts
+    window.addEventListener('load', function(){ setTimeout(tryPlayUnmuted, 120); });
+  })();
+</script>
+
+<script>
+/* ---------- Utilities ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+function nowISO(){ return new Date().toISOString().replace('T',' ').slice(0,19); }
+
+/* ---------- Matrix Canvas (kept, scaled for smaller area) ---------- */
+(function matrix(){
+  const canvas = $('#matrixCanvas'), ctx = canvas.getContext('2d');
+  let cols, rows, size = Math.max(10, Math.floor(window.innerWidth/42)), drops;
+  function resize(){
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    cols = Math.floor(canvas.clientWidth / size) || 20;
+    rows = Math.floor(canvas.clientHeight / size) || 10;
+    drops = new Array(cols).fill(0).map(()=>Math.floor(Math.random()*rows));
+  }
+  function ch(){ return String.fromCharCode(33 + Math.floor(Math.random()*94)); }
+  function draw(){
+    ctx.fillStyle = 'rgba(5,4,6,0.16)'; ctx.fillRect(0,0,canvas.clientWidth, canvas.clientHeight);
+    ctx.font = size + 'px monospace';
+    for(let i=0;i<cols;i++){
+      const x = i*size, y = drops[i]*size;
+      ctx.fillStyle = i%10===0 ? 'rgba(255,59,59,0.95)' : 'rgba(255,100,90,0.45)';
+      ctx.fillText(ch(), x, y);
+      if(y > canvas.clientHeight && Math.random()>0.985) drops[i]=0; else drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', ()=>{ clearTimeout(window._rs); window._rs=setTimeout(()=>{ size = Math.max(8, Math.floor(window.innerWidth/42)); resize(); }, 120) });
+  setTimeout(()=>{ resize(); draw(); }, 80);
+})();
+
+/* ---------- Fake logs ---------- */
+const logArea = $('#logArea');
+const events = [
+  "[INFO] db: connection pool established",
+  "[WARN] cache: eviction threshold reached",
+  "[ERROR] disk: io timeout on /dev/sda",
+  "[INFO] net: link up wlan0",
+  "[SEC] firewall: blocking 172.16.8.3",
+  "[NOTICE] update: kernel patch available",
+  "[DEBUG] scheduler: job 129 queued",
+  "[INFO] ssh: new connection from 10.0.0.5"
+];
+function pushLog(){
+  const e = events[Math.floor(Math.random()*events.length)];
+  const t = nowISO();
+  const div = document.createElement('div');
+  div.innerHTML = `<span style="color:var(--muted)">${t}</span> <span style="color:var(--accent)">${e}</span>`;
+  logArea.appendChild(div); logArea.scrollTop = logArea.scrollHeight;
+  while(logArea.children.length>500) logArea.removeChild(logArea.firstChild);
+}
+let logTimer = setInterval(pushLog, 700 + Math.random()*800);
+for(let i=0;i<10;i++) pushLog();
+$('#regen').addEventListener('click', ()=>{ logArea.innerHTML=''; for(let i=0;i<10;i++) pushLog(); });
+
+/* ---------- Telemetry ---------- */
+function fmtNet(kb){ return kb>1024 ? (kb/1024).toFixed(1)+'MB/s' : Math.round(kb)+'KB/s' }
+function updateMeters(){
+  const cpu = 8 + Math.floor(Math.random()*82);
+  const gpu = 5 + Math.floor(Math.random()*85);
+  const net = Math.random()*900 + Math.random()*200;
+  $('#cpuBar').style.width = cpu + '%';
+  $('#gpuBar').style.width = gpu + '%';
+  $('#netBar').style.width = Math.min(100,(net/1200)*100) + '%';
+  $('#cpuVal').textContent = cpu + '%'; $('#gpuVal').textContent = gpu + '%'; $('#netVal').textContent = fmtNet(net);
+  setTimeout(updateMeters, 700 + Math.random()*1100);
+}
+updateMeters();
+setInterval(()=> $('#clock').textContent = new Date().toLocaleString(), 1000);
+
+/* ---------- Terminal / Commands (simulation-only) ---------- */
+const termOut = $('#termOut'), cmdInput = $('#cmdInput'), runBtn = $('#runBtn');
+const triggerWords = ['initiate','hack','start','access'];
+const fakeResp = {
+  help: "available: help, initiate, hack, start, access, status, clear",
+  whoami: "neo",
+  status: "system: nominal\nmode: simulation\nservices: 42",
+  clear: "__CLEAR__"
+};
+function appendOut(txt, color='var(--muted)'){
+  const d = document.createElement('div'); d.style.marginBottom='6px'; d.innerHTML = `<span style="color:${color}">${txt}</span>`; termOut.appendChild(d); termOut.scrollTop = termOut.scrollHeight;
+}
+appendOut("Welcome to Max School —💻", 'var(--muted)');
+cmdInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ runCommand(cmdInput.value.trim()); cmdInput.value=''; }});
+runBtn.addEventListener('click', ()=> { runCommand(cmdInput.value.trim()); cmdInput.value=''; });
+
+function runCommand(v){
+  if(!v) return;
+  appendOut('$ ' + escapeHtml(v), 'var(--accent)');
+  const base = v.split(' ')[0].toLowerCase();
+  if(triggerWords.includes(base)){
+    startBreachSequence(base);
+    return;
+  }
+  if(fakeResp[base]){
+    if(fakeResp[base] === '__CLEAR__'){ termOut.innerHTML=''; return; }
+    fakeResp[base].split('\n').forEach((l,i)=> setTimeout(()=> appendOut(escapeHtml(l)), i*130));
+    return;
+  }
+  setTimeout(()=> appendOut(`command not found: ${escapeHtml(base)}`), 120);
+}
+
+/* ---------- Breach / Loading Sequence (simulation only) ---------- */
+const loadingOverlay = $('#loadingOverlay'), progressBar = $('#progressBar'), percentText = $('#percentText'), protocolArea = $('#protocolArea'), terminalCard = $('#terminalCard');
+const bigTitle = $('#bigTitle');
+
+let breachRunning = false;
+function startBreachSequence(cmd){
+  if(breachRunning) return;
+  breachRunning = true;
+  // clear and show overlay
+  protocolArea.innerHTML = '';
+  progressBar.style.width = '0%';
+  percentText.textContent = '0%';
+  loadingOverlay.style.display = 'flex';
+  // disable input
+  $('#promptRow').style.opacity = 0.6; $('#cmdInput').blur(); $('#cmdInput').disabled = true; runBtn.disabled = true;
+
+  // simulation steps (no real network actions; purely UI)
+  const steps = [
+    {t: 6, text: "[SIM] Establishing secure simulation uplink..."},
+    {t: 20, text: "[SIM] Breaching firewall layer 1 (simulated)..."},
+    {t: 36, text: "[SIM] Injecting payload into *simulation nodes*..."},
+    {t: 54, text: "[SIM] Escalating simulation privileges and spawning shells..."},
+    {t: 72, text: "[SIM] Clearing evidence traces (simulated)..."},
+    {t: 86, text: "[SIM] Deleting C2 breadcrumbs (simulated)..."},
+    {t: 96, text: "[SIM COMPLETE] System infiltration simulated."}
+  ];
+  let percent = 0;
+  const tick = setInterval(()=>{
+    percent += 1 + Math.floor(Math.random()*3); // jitter
+    if(percent > 100) percent = 100;
+    progressBar.style.width = percent + '%';
+    percentText.textContent = percent + '%';
+    // show protocol lines when percent crosses thresholds
+    steps.forEach(s => { if(percent >= s.t && !protocolArea.textContent.includes(s.text)){ protocolArea.innerHTML += `${nowISO()} ${s.text}\n`; protocolArea.scrollTop = protocolArea.scrollHeight; }});
+    if(percent >= 100){
+      clearInterval(tick);
+      // finalization actions for simulation:
+      setTimeout(()=> {
+        // change big title to operation area and make it green (simulation notice)
+        bigTitle.textContent = "ACCOUNT HAS BEEN INFILTRATED — OPERATION AREA (SIM)";
+        bigTitle.classList.add('simulatedGreen');
+        // replace terminal welcome text with a clear simulation banner
+        termOut.innerHTML = '';
+        appendOut("ACCOUNT HAS BEEN INFILTRATED — SIMULATION MODE ACTIVE", 'var(--success)');
+        appendOut("NOTE: This is a harmless simulation. No network actions are performed.", 'var(--muted)');
+        // enable a special simulation-only prompt for a "simulation target label"
+        askSimulationTarget();
+        breachRunning = false;
+      }, 450);
+    }
+  }, 90);
+}
+
+/* ---------- Simulation Target Prompt (no network, purely cosmetic) ---------- */
+function askSimulationTarget(){
+  // show an in-terminal interaction asking for a label (explicitly simulation-only)
+  appendOut("", 'var(--muted)');
+  appendOut("Enter simulation target label (e.g. example.com) — for demo only:", 'var(--muted)');
+  // create a temporary input field in the terminal area (this is purely UI; no network)
+  const tmp = document.createElement('div');
+  tmp.style.display = 'flex'; tmp.style.gap = '8px'; tmp.style.marginTop = '6px';
+  tmp.innerHTML = `<input id="simTargetInput" placeholder="simulation target label" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:6px;color:var(--accent2);font-family:var(--mono)"><button class="btn" id="simTargetBtn">Set (sim)</button>`;
+  termOut.appendChild(tmp);
+  termOut.scrollTop = termOut.scrollHeight;
+  const simInput = document.getElementById('simTargetInput');
+  const simBtn = document.getElementById('simTargetBtn');
+
+  function acceptSim(){
+    const val = (simInput.value || '').trim() || 'example.com';
+    // store purely as label for simulation UI — DO NOT use in any requests
+    appendOut(`Simulation target set to: ${escapeHtml(val)}`, 'var(--muted)');
+    // remove temporary controls
+    tmp.remove();
+    // continue cinematic finalization (blur UI)
+    finalizeSimulation(val);
+  }
+  simBtn.addEventListener('click', acceptSim);
+  simInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') acceptSim(); });
+  // give focus to the sim input
+  setTimeout(()=> simInput.focus(), 120);
+}
+
+/* ---------- Finalization (blur + simulated logs) ---------- */
+function finalizeSimulation(label){
+  // produce some simulated actions in logs (purely cosmetic)
+  const simLines = [
+    `[SIM] targeting: ${label}`,
+    `[SIM] enumeration (simulated) : hosts discovered: 8`,
+    `[SIM] payload delivered (simulated)`,
+    `[SIM] cleanup (simulated) complete`
+  ];
+  simLines.forEach((l,i)=> setTimeout(()=> appendOut(l, 'var(--muted)'), i*500));
+  // animate a final pulse and blur main terminal ('keeps overlay visible briefly)
+  setTimeout(()=> {
+    $('#promptRow').style.opacity = 0.35;
+    $('#cmdInput').disabled = true; runBtn.disabled = true;
+    terminalCard.classList.add('blurred');
+    // show a short overlay message on the visual' (optional)
+    // NOTE: nothing here performs real network activity — this is strictly cosmetic.
+  }, 2500);
+}
+
+/* ---------- Camera faux animation ---------- */
+(function camAnim(){
+  const frame = document.querySelector('.cam-frame');
+  function jitter(){
+    frame.style.opacity = 0.88 + Math.random()*0.12;
+    frame.style.transform = `translate(${(Math.random()-0.5)*2}px, ${(Math.random()-0.5)*2}px) rotate(${(Math.random()-0.5)*0.8}deg)`;
+    frame.style.backgroundPosition = `${Math.random()*100}% ${Math.random()*100}%`;
+    setTimeout(jitter, 160 + Math.random()*360);
+  }
+  jitter();
+})();
+
+/* ---------- Speech Synthesis (female voice) ---------- */
+const speechText = "Access granted. Process initiated. Welcome to Max School of Hacking — simulation.";
+let synth = window.speechSynthesis;
+let voiced = false;
+function speak(){
+  try{
+    if(!synth) throw 0;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(speechText);
+    const voices = synth.getVoices();
+    let candidate = voices.find(v => /female|woman|fema/i.test(v.name)) || voices.find(v => /Google UK English Female|en-GB/i.test(v.name)) || voices.find(v => /en-US/i.test(v.lang)) || voices[0];
+    if(candidate) u.voice = candidate;
+    u.rate = 0.95; u.pitch = 1.05; u.volume = 1.0;
+    u.onend = ()=> { voiced = true; console.log('tts done'); };
+    synth.speak(u);
+  }catch(e){
+    fallbackBeep();
+  }
+}
+function fallbackBeep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.value = 700; g.gain.value = 0.001;
+    o.connect(g); g.connect(ctx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.06, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+    o.stop(ctx.currentTime + 0.23);
+  }catch(e){}
+}
+window.addEventListener('load', ()=> {
+  setTimeout(()=> {
+    if(window.speechSynthesis && window.speechSynthesis.getVoices().length === 0){
+      window.speechSynthesis.onvoiceschanged = () => speak();
+    } else speak();
+  }, 350);
+});
+document.addEventListener('click', function onFirst(){
+  if(!voiced){ speak(); }
+  document.removeEventListener('click', onFirst);
+});
+
+/* ---------- Mobile keyboard / viewport helpers (keep input visible) ---------- */
+/* This ensures the sticky prompt stays visible above on-screen keyboards on many mobile browsers.
+   We avoid any network activity here; adjustments are purely layout. */
+function adjustForVisualViewport(){
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    // compute bottom inset when virtual keyboard is visible
+    const bottomInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const pad = (bottomInset || 12) + 'px';
+    // apply padding to the terminal card to keep prompt visible
+    terminalCard.style.paddingBottom = pad;
+  } else {
+    terminalCard.style.paddingBottom = '12px';
+  }
+}
+window.addEventListener('resize', adjustForVisualViewport);
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', adjustForVisualViewport);
+  window.visualViewport.addEventListener('scroll', adjustForVisualViewport);
+}
+adjustForVisualViewport();
+// on input focus, ensure input is scrolled into view
+cmdInput.addEventListener('focus', ()=> { setTimeout(()=> { cmdInput.scrollIntoView({behavior:'smooth',block:'center'}); }, 300); });
+
+/* ---------- Helpers ---------- */
+function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+</script>
+<!-- your existing page remains unchanged above this line -->
+
+<!-- background soundtrack (kept hidden) -->
+<audio id="bgAudio" src="advert.mp3" loop hidden></audio>
+
+<script>
+window.addEventListener("load", () => {
+  // --- Intro voice that won't cut off ---
+  const introVoice = new SpeechSynthesisUtterance(
+    "Welcome to Max School of Hacking Simulation. Initializing protocol sequence. Please stand by for network calibration."
+  );
+  introVoice.lang = "en-US";
+  introVoice.rate = 0.9;
+  introVoice.pitch = 1;
+
+  introVoice.onend = () => {
+    // start background audio only after speech finishes
+    const audio = document.getElementById("bgAudio");
+    setTimeout(() => {
+      audio.play().catch(err => console.warn("Audio play blocked:", err));
+    }, 500);
+  };
+
+  introVoice.onerror = e => console.error("Speech error:", e);
+
+  // give browser a moment to settle before speaking
+  setTimeout(() => {
+    speechSynthesis.cancel();
+    speechSynthesis.speak(introVoice);
+  }, 800);
+});
+</script>
+
+</body>
+</html>
+
+</body>
+</html>
