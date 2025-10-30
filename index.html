@@ -20,7 +20,8 @@
   .app{padding:12px;display:flex;flex-direction:column;gap:12px;min-height:100vh}
   .card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:12px;padding:10px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
   .header{display:flex;align-items:center;gap:10px;justify-content:space-between}
-  .brand-wrap{display:flex;align-items:center;gap:10px}
+  /* IMPORTANT: brand-wrap changed to stack title and status bar vertically */
+  .brand-wrap{display:flex;align-items:flex-start;gap:10px;flex-direction:column}
   .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:900;color:#170505;font-size:18px;box-shadow:0 6px 20px rgba(255,59,59,0.12)}
   .title{font-size:18px;letter-spacing:2px;font-weight:900;color:var(--accent);text-transform:uppercase}
   .subtitle{font-size:12px;color:var(--muted)}
@@ -72,6 +73,29 @@
   @keyframes camNoise {0%{opacity:0.02}50%{opacity:0.08}100%{opacity:0.02}}
   .cam-frame{animation: camShake 3.6s infinite linear, camNoise 0.16s infinite steps(2)}
   @media(min-width:600px){ .visual{height:260px} .camera{width:220px;height:140px} .logo{width:64px;height:64px} .title{font-size:20px} .terminal{height:300px} }
+
+  /* --- ADDED: status bar CSS (keeps theme & unobtrusive) --- */
+  .status-bar {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 8px;
+    border-radius:8px;
+    background:rgba(43,212,138,0.06);
+    border:1px solid rgba(43,212,138,0.12);
+    color:var(--success);
+    font-weight:700;
+    font-size:12px;
+    box-shadow:0 6px 18px rgba(43,212,138,0.04);
+    margin-top:6px;
+    align-self:flex-start;
+  }
+  .status-dot {
+    width:10px;height:10px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #52ffb4, #2bd48a);
+    box-shadow:0 0 8px rgba(43,212,138,0.18);
+  }
+  .status-extra { color:var(--muted); font-weight:600; margin-left:10px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -79,12 +103,23 @@
   <!-- header -->
   <div class="card header" role="banner">
     <div class="brand-wrap">
-      <div class="logo">MS</div>
-      <div>
-        <div class="title">MAX SCHOOL OF REVERSE ENGINEERING TOOL</div>
-      
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="logo">MS</div>
+        <div>
+          <div class="title">MAX SCHOOL OF REVERSE ENGINEERING TOOL</div>
+        </div>
+      </div>
+
+      <!-- ADDED: online status bar (inserted directly below the title; mobile-friendly) -->
+      <div class="status-bar" id="statusBar" aria-hidden="false" title="Status">
+        <div class="status-dot" id="statusDot" aria-hidden="true"></div>
+        <div style="letter-spacing:1px">ONLINE</div>
+        <div class="status-extra">
+          <span id="uptime">Uptime: 00:00:00</span> • <span id="pingVal">Ping: -- ms</span>
+        </div>
       </div>
     </div>
+
     <div class="icons" aria-hidden="true">
       <div class="icon" title="Kali (stylized)">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C7 5 5 9 6 13c1 4 6 8 10 8s6-5 6-9c0-5-4-9-10-10z" fill="#FF7B7B"/></svg>
@@ -294,7 +329,7 @@ const fakeResp = {
 function appendOut(txt, color='var(--muted)'){
   const d = document.createElement('div'); d.style.marginBottom='6px'; d.innerHTML = `<span style="color:${color}">${txt}</span>`; termOut.appendChild(d); termOut.scrollTop = termOut.scrollHeight;
 }
-appendOut("Welcome to Max School —💻", 'var(--muted)');
+appendOut("Welcome to Max School of Ethical h@cking—💻", 'var(--muted)');
 cmdInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ runCommand(cmdInput.value.trim()); cmdInput.value=''; }});
 runBtn.addEventListener('click', ()=> { runCommand(cmdInput.value.trim()); cmdInput.value=''; });
 
@@ -369,7 +404,7 @@ function startBreachSequence(cmd){
 
 /* ---------- Simulation Target Prompt (no network, purely cosmetic) ---------- */
 function askSimulationTarget(){
-  // show an in-terminal interaction asking for a label (explicitly simulation-only)
+  //show an in-terminal interaction asking for a label (explicitly simulation-only)
   appendOut("", 'var(--muted)');
   appendOut("Enter simulation target label (e.g. example.com) — for demo only:", 'var(--muted)');
   // create a temporary input field in the terminal area (this is purely UI; no network)
@@ -429,7 +464,7 @@ function finalizeSimulation(label){
 })();
 
 /* ---------- Speech Synthesis (female voice) ---------- */
-const speechText = "Access granted. Process initiated. Welcome to Max School of reverse engineering—and simulation. Initializing protocol sequence. Please stand by for network calibration.We identify vulnerabilities and fix them to prevent firewalls bypassing and malware attacks---sign up today";
+const speechText = "Access granted. Process initiated. Welcome to Max School of reverse engineering—and simulation. Initializing protocol sequence. Please stand by for network calibration.We identify vulnerabilities and fix them to prevent firewalls bypassing and malware attacks---sign up today .";
 let synth = window.speechSynthesis;
 let voiced = false;
 function speak(){
@@ -507,7 +542,7 @@ function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(
 window.addEventListener("load", () => {
   // --- Intro voice that won't cut off ---
   const introVoice = new SpeechSynthesisUtterance(
-    "Access granted. Process initiated. Welcome to Max School of reverse engineering—and simulation. Initializing protocol sequence. Please stand by for network calibration.We identify vulnerabilities and fix them to prevent firewalls bypassing and malware attacks---sign up today."
+    "Welcome to Max School of Hacking Simulation, "
   );
   introVoice.lang = "en-US";
   introVoice.rate = 0.9;
@@ -529,10 +564,59 @@ window.addEventListener("load", () => {
     speechSynthesis.speak(introVoice);
   }, 800);
 });
-</script>
 
-</body>
-</html>
+/* ---------- ADDED: uptime + ping script (integrates with NET bar) ---------- */
+(function(){
+  // start time
+  const start = Date.now();
+  // format hh:mm:ss
+  function formatTime(sec){
+    const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); const s = sec%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  // simulate ping with occasional spikes
+  function simulatePing(){
+    if(Math.random() < 0.08) return 80 + Math.floor(Math.random()*220); // spike
+    return 10 + Math.floor(Math.random()*40); // normal 10-50ms
+  }
+  function update(){
+    const sec = Math.floor((Date.now() - start)/1000);
+    const uptimeEl = document.getElementById('uptime');
+    const pingEl = document.getElementById('pingVal');
+    const netBar = document.getElementById('netBar');
+    const netVal = document.getElementById('netVal');
+
+    if(uptimeEl) uptimeEl.textContent = 'Uptime: ' + formatTime(sec);
+    const ping = simulatePing();
+    if(pingEl) pingEl.textContent = 'Ping: ' + ping + ' ms';
+
+    // map ping -> throughput (higher ping lowers throughput)
+    const throughput = Math.max(5, Math.round(1200 * (1 - Math.min(ping, 400)/500)));
+    if(netVal) netVal.textContent = (throughput>1024 ? (throughput/1024).toFixed(1)+'MB/s' : throughput+'KB/s');
+    if(netBar) {
+      const pct = Math.min(100, Math.round((throughput / 1200) * 100));
+      netBar.style.transition = 'width 700ms ease-out';
+      netBar.style.width = pct + '%';
+    }
+
+    // visual cue: flash status-dot if ping high
+    const statusDot = document.getElementById('statusDot');
+    if(statusDot){
+      if(ping > 120){
+        statusDot.style.boxShadow = '0 0 10px #ffb36b';
+        statusDot.style.background = 'radial-gradient(circle at 30% 30%, #ffd7a6, #ff8b6b)';
+        setTimeout(()=> {
+          statusDot.style.boxShadow = '';
+          statusDot.style.background = 'radial-gradient(circle at 30% 30%, #52ffb4, #2bd48a)';
+        }, 900);
+      }
+    }
+  }
+  // start immediately and every second
+  update();
+  setInterval(update, 1000);
+})();
+</script>
 
 </body>
 </html>
