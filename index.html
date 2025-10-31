@@ -617,6 +617,50 @@ window.addEventListener("load", () => {
   setInterval(update, 1000);
 })();
 </script>
+  <!-- machine ambience and voice intro -->
+<audio id="machineFX" src="machine.mp3" preload="auto" loop hidden></audio>
+
+<script>
+window.addEventListener("load", () => {
+  // The spoken intro
+  const voice = new SpeechSynthesisUtterance(
+    "Welcome to Max School of reverse engineering—and simulation. Initializing protocol sequence. Please stand by for network calibration.We identify vulnerabilities and fix them to prevent firewalls bypassing and malware attacks---sign up today"
+  );
+  voice.lang = "en-US";
+  voice.rate = 1.05;   // slightly faster, robotic cadence
+  voice.pitch = 0.85;  // lower pitch for synthetic tone
+  voice.volume = 1;
+
+  // Background machine beeping / ambient sound
+  const machine = document.getElementById("machineFX");
+  machine.volume = 0.35;  // subtle background level
+
+  // Start machine sound when speech starts
+  voice.onstart = () => {
+    machine.currentTime = 0;
+    machine.play().catch(err => console.warn("Audio play blocked:", err));
+  };
+
+  // Fade out machine noise after voice ends
+  voice.onend = () => {
+    const fade = setInterval(() => {
+      if (machine.volume > 0.05) {
+        machine.volume -= 0.05;
+      } else {
+        clearInterval(fade);
+        machine.pause();
+        machine.volume = 0.35; // reset for next play
+      }
+    }, 200);
+  };
+
+  // Give page a short pause before starting voice
+  setTimeout(() => {
+    speechSynthesis.cancel();
+    speechSynthesis.speak(voice);
+  }, 1000);
+});
+</script>
 
 </body>
 </html>
