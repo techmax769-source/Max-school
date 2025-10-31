@@ -393,7 +393,7 @@ function startBreachSequence(cmd){
         // replace terminal welcome text with a clear simulation banner
         termOut.innerHTML = '';
         appendOut("ACCOUNT HAS BEEN INFILTRATED — SIMULATION MODE ACTIVE", 'var(--success)');
-        appendOut("NOTE: This is a harmless simulation. No network actions are performed.", 'var(--muted)');
+        appendOut("NOTE: This is a harmless simulation.  Network protection successfully activated", 'var(--muted)');
         // enable a special simulation-only prompt for a "simulation target label"
         askSimulationTarget();
         breachRunning = false;
